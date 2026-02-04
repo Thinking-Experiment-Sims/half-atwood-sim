@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Newton's 2nd Law: Cart + Friction Pad Simulation</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero card">
+        <p class="eyebrow">Physics Lab Practice</p>
+        <h1>Developing Newton's 2nd Law with a Half Atwood Model</h1>
+        <p>
+          Part 1 uses a cart only. Part 2 uses a cart + friction pad. Collect graph-based measurements,
+          build force-vs-acceleration fits, and export your work.
+        </p>
+      </header>
+
+      <section class="card machine-centerpiece">
+        <div class="graph-toolbar">
+          <h2>Half Atwood Machine View (Primary)</h2>
+          <button id="machinePlayButton">Play</button>
+        </div>
+        <canvas id="machineCanvas" class="machine-canvas" width="960" height="320"></canvas>
+        <div class="machine-scrub">
+          <label for="machineTimeSlider">Timeline</label>
+          <input id="machineTimeSlider" type="range" min="0" max="4.5" value="0" step="0.01" />
+        </div>
+        <div class="machine-readout">
+          <p><strong>Scenario:</strong> <span id="machineScenarioValue">--</span></p>
+          <p><strong>Time:</strong> <span id="machineTimeValue">0.00 s</span></p>
+          <p><strong>Phase:</strong> <span id="machinePhaseValue">--</span></p>
+          <p><strong>Force Sensor:</strong> <span id="machineForceValue">-- N</span></p>
+          <p><strong>Cart Velocity:</strong> <span id="machineVelocityValue">-- m/s</span></p>
+        </div>
+      </section>
+
+      <main class="layout">
+        <section class="card controls">
+          <h2>Lab Controls</h2>
+
+          <div class="control-grid">
+            <label>
+              Scenario
+              <select id="scenarioSelect">
+                <option value="cart_only">Cart Only</option>
+                <option value="cart_plus_pad">Cart + Friction Pad</option>
+              </select>
+            </label>
+
+            <label>
+              Teacher Preset
+              <select id="presetSelect"></select>
+            </label>
+
+            <label>
+              Hanging Mass
+              <select id="hangingMassSelect"></select>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <label class="toggle">
+              <input id="noiseCheckbox" type="checkbox" />
+              Realistic sensor noise
+            </label>
+            <label class="toggle">
+              <input id="showFbdCheckbox" type="checkbox" checked />
+              Show force diagram
+            </label>
+          </div>
+
+          <div class="action-row">
+            <button id="runTrialButton" class="primary">Run Trial</button>
+            <button id="addTrialButton">Add to Table</button>
+            <button id="clearTrialsButton">Clear Table</button>
+          </div>
+
+          <div class="action-row">
+            <button id="exportCsvButton">Export CSV</button>
+            <button id="exportPngButton">Export Graph PNG</button>
+          </div>
+
+          <p id="statusText" class="status" data-tone="ok" aria-live="polite"></p>
+
+          <h3>Scaffolded Checklist</h3>
+          <ul class="checklist">
+            <li id="stepSetup">Choose scenario, preset, and hanging mass. <span>Pending</span></li>
+            <li id="stepRun">Run one trial. <span>Pending</span></li>
+            <li id="stepForceWindow">Select force window. <span>Pending</span></li>
+            <li id="stepVelocityWindow">Select velocity window. <span>Pending</span></li>
+            <li id="stepAdd">Add at least one accepted trial. <span>Pending</span></li>
+            <li id="stepFit">Collect 2+ trials for fit. <span>Pending</span></li>
+            <li id="stepExport">Export data or graph. <span>Pending</span></li>
+          </ul>
+
+          <div class="split-panels">
+            <div>
+              <h3>Preset Details</h3>
+              <ul id="presetDetails" class="mini-list"></ul>
+            </div>
+            <div>
+              <h3>Current Trial</h3>
+              <ul id="currentTrialSummary" class="mini-list"></ul>
+            </div>
+          </div>
+
+          <div class="metrics">
+            <article class="metric-card">
+              <h4>Force Selection</h4>
+              <p id="forceSelectionLabel">No window selected</p>
+              <p class="metric-value"><span id="forceMeanValue">--</span> N (mean)</p>
+            </article>
+            <article class="metric-card">
+              <h4>Velocity Selection</h4>
+              <p id="velocitySelectionLabel">No window selected</p>
+              <p class="metric-value"><span id="accelValue">--</span> m/s^2 (slope)</p>
+            </article>
+          </div>
+
+          <h3>Accepted Trials</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Scenario</th>
+                  <th>Mass (kg)</th>
+                  <th>Force (N)</th>
+                  <th>Accel (m/s^2)</th>
+                  <th>Force Window (s)</th>
+                  <th>Vel Window (s)</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="dataTableBody">
+                <tr>
+                  <td colspan="8">No accepted trials yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="graphs-column">
+          <article class="card graph-card">
+            <div class="graph-toolbar">
+              <h3>Force-Time Graph</h3>
+              <div class="nudge-controls" aria-label="Force graph keyboard nudge controls">
+                <button class="nudge-btn" data-graph="force" data-boundary="start" data-dir="-1" data-step="0.02">Start -</button>
+                <button class="nudge-btn" data-graph="force" data-boundary="start" data-dir="1" data-step="0.02">Start +</button>
+                <button class="nudge-btn" data-graph="force" data-boundary="end" data-dir="-1" data-step="0.02">End -</button>
+                <button class="nudge-btn" data-graph="force" data-boundary="end" data-dir="1" data-step="0.02">End +</button>
+              </div>
+            </div>
+            <canvas id="forceCanvas" class="graph" width="960" height="360"></canvas>
+            <p class="graph-help">Tip: Drag across the graph to choose the averaging interval. Keyboard: Shift+Arrow adjusts start, Arrow adjusts end.</p>
+          </article>
+
+          <article class="card graph-card">
+            <div class="graph-toolbar">
+              <h3>Velocity-Time Graph</h3>
+              <div class="nudge-controls" aria-label="Velocity graph keyboard nudge controls">
+                <button class="nudge-btn" data-graph="velocity" data-boundary="start" data-dir="-1" data-step="0.02">Start -</button>
+                <button class="nudge-btn" data-graph="velocity" data-boundary="start" data-dir="1" data-step="0.02">Start +</button>
+                <button class="nudge-btn" data-graph="velocity" data-boundary="end" data-dir="-1" data-step="0.02">End -</button>
+                <button class="nudge-btn" data-graph="velocity" data-boundary="end" data-dir="1" data-step="0.02">End +</button>
+              </div>
+            </div>
+            <canvas id="velocityCanvas" class="graph" width="960" height="360"></canvas>
+            <p class="graph-help">Fit a line to the selected interval to estimate acceleration.</p>
+          </article>
+
+          <article class="card graph-card">
+            <h3>Force vs Acceleration</h3>
+            <canvas id="fitCanvas" class="graph" width="960" height="360"></canvas>
+            <p id="fitEquation" class="fit-eq">Need at least 2 accepted trials for a linear fit.</p>
+            <p id="fitQuality" class="fit-q">R^2: --</p>
+            <ul id="fitInterpretation" class="mini-list">
+              <li>Collect accepted trials to display slope/intercept interpretations.</li>
+            </ul>
+          </article>
+
+          <article id="fbdPanel" class="card graph-card">
+            <h3>Free-Body Diagram</h3>
+            <div id="fbdFigure" class="fbd-figure"></div>
+            <p class="graph-help">Use this as a model while creating your own force diagrams for lab write-up figures.</p>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="./src/app.js?v=20260204b"></script>
+  </body>
+</html>
