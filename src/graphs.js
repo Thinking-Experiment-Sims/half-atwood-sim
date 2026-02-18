@@ -656,7 +656,7 @@ export class ScatterFitGraph {
     ctx.fillStyle = "#1b4f62";
     ctx.font = `${11 * ratio}px 'Trebuchet MS', 'Segoe UI', sans-serif`;
     ctx.fillText("Acceleration (m/s^2)", plotRight - 124 * ratio, plotBottom + 30 * ratio);
-    ctx.fillText("Force (N)", plotLeft + 4 * ratio, plotTop - 10 * ratio);
+    ctx.fillText("Force of Tension, Fₜ (N)", plotLeft + 4 * ratio, plotTop - 10 * ratio);
 
     if (!this.points.length) {
       ctx.fillStyle = "#536f7a";

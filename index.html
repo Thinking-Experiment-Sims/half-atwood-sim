@@ -9,6 +9,7 @@
   <body>
     <div class="page-shell">
       <header class="hero card">
+        <button id="themeToggleButton" class="theme-toggle-btn" type="button" aria-pressed="false">Dark Mode</button>
         <p class="eyebrow">Physics Lab Practice</p>
         <h1>Developing Newton's 2nd Law with a Half Atwood Model</h1>
         <p>
@@ -88,7 +89,7 @@
           <ul class="checklist">
             <li id="stepSetup">Choose scenario, preset, and hanging mass. <span>Pending</span></li>
             <li id="stepRun">Run one trial. <span>Pending</span></li>
-            <li id="stepForceWindow">Select force window. <span>Pending</span></li>
+            <li id="stepForceWindow">Select tension (Fₜ) window. <span>Pending</span></li>
             <li id="stepVelocityWindow">Select velocity window. <span>Pending</span></li>
             <li id="stepAdd">Add at least one accepted trial. <span>Pending</span></li>
             <li id="stepFit">Collect 2+ trials for fit. <span>Pending</span></li>
@@ -108,7 +109,7 @@
 
           <div class="metrics">
             <article class="metric-card">
-              <h4>Force Selection</h4>
+              <h4>Tension (Fₜ) Selection</h4>
               <p id="forceSelectionLabel">No window selected</p>
               <p class="metric-value"><span id="forceMeanValue">--</span> N (mean)</p>
             </article>
@@ -127,7 +128,7 @@
                   <th>ID</th>
                   <th>Scenario</th>
                   <th>Mass (kg)</th>
-                  <th>Force (N)</th>
+                  <th>Fₜ (N)</th>
                   <th>Accel (m/s^2)</th>
                   <th>Force Window (s)</th>
                   <th>Vel Window (s)</th>
@@ -146,7 +147,7 @@
         <section class="graphs-column">
           <article class="card graph-card">
             <div class="graph-toolbar">
-              <h3>Force-Time Graph</h3>
+              <h3>Tension (Fₜ)-Time Graph</h3>
               <div class="nudge-controls" aria-label="Force graph keyboard nudge controls">
                 <button class="nudge-btn" data-graph="force" data-boundary="start" data-dir="-1" data-step="0.02">Start -</button>
                 <button class="nudge-btn" data-graph="force" data-boundary="start" data-dir="1" data-step="0.02">Start +</button>
@@ -173,7 +174,7 @@
           </article>
 
           <article class="card graph-card">
-            <h3>Force vs Acceleration</h3>
+            <h3>Force of Tension (Fₜ) vs Acceleration</h3>
             <canvas id="fitCanvas" class="graph" width="960" height="360"></canvas>
             <p id="fitEquation" class="fit-eq">Need at least 2 accepted trials for a linear fit.</p>
             <p id="fitQuality" class="fit-q">R^2: --</p>
@@ -189,6 +190,10 @@
           </article>
         </section>
       </main>
+
+      <footer class="site-footer">
+        <p>&copy; Vladimir Lopez · The Thinking Experiment</p>
+      </footer>
     </div>
 
     <script type="module" src="./src/app.js?v=20260204b"></script>

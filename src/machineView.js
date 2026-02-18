@@ -225,7 +225,7 @@ export class HalfAtwoodView {
     const trackRight = width - 185 * ratio;
     const trackY = 125 * ratio;
     const pulleyX = trackRight + 58 * ratio;
-    const pulleyY = trackY;
+    const pulleyY = trackY + 12 * ratio;
     const cartX = trackLeft + 20 * ratio;
     const massTopY = pulleyY + 26 * ratio;
 
@@ -236,11 +236,16 @@ export class HalfAtwoodView {
     ctx.lineTo(trackRight, trackY + 28 * ratio);
     ctx.stroke();
 
+    const pulleyRadius = 16 * ratio;
+    const cartStringX = cartX + 76 * ratio;
+    const cartStringY = trackY + 12 * ratio;
+
     ctx.strokeStyle = "#507885";
     ctx.lineWidth = 2 * ratio;
     ctx.beginPath();
-    ctx.moveTo(trackRight, trackY + 28 * ratio);
-    ctx.lineTo(pulleyX, pulleyY);
+    ctx.moveTo(cartStringX, cartStringY);
+    ctx.lineTo(pulleyX - pulleyRadius, pulleyY);
+    ctx.arc(pulleyX, pulleyY, pulleyRadius, Math.PI, Math.PI / 2, true);
     ctx.lineTo(pulleyX, massTopY);
     ctx.stroke();
 
@@ -248,7 +253,7 @@ export class HalfAtwoodView {
     ctx.strokeStyle = "#2d5865";
     ctx.lineWidth = 2 * ratio;
     ctx.beginPath();
-    ctx.arc(pulleyX, pulleyY, 16 * ratio, 0, Math.PI * 2);
+    ctx.arc(pulleyX, pulleyY, pulleyRadius, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
@@ -298,7 +303,7 @@ export class HalfAtwoodView {
     const trackRight = width - 185 * ratio;
     const trackY = 125 * ratio;
     const pulleyX = trackRight + 58 * ratio;
-    const pulleyY = trackY;
+    const pulleyY = trackY + 12 * ratio;
     const cartBaseX = trackLeft + 20 * ratio;
 
     const displacement = cartDisplacementM(this.trial, this.currentTimeS);
@@ -314,11 +319,16 @@ export class HalfAtwoodView {
     ctx.lineTo(trackRight, trackY + 28 * ratio);
     ctx.stroke();
 
+    const pulleyRadius = 16 * ratio;
+    const cartStringX = cartX + 76 * ratio;
+    const cartStringY = trackY + 12 * ratio;
+
     ctx.strokeStyle = "#507885";
     ctx.lineWidth = 2 * ratio;
     ctx.beginPath();
-    ctx.moveTo(trackRight, trackY + 28 * ratio);
-    ctx.lineTo(pulleyX, pulleyY);
+    ctx.moveTo(cartStringX, cartStringY);
+    ctx.lineTo(pulleyX - pulleyRadius, pulleyY);
+    ctx.arc(pulleyX, pulleyY, pulleyRadius, Math.PI, Math.PI / 2, true);
     ctx.lineTo(pulleyX, massTopY);
     ctx.stroke();
 
@@ -326,7 +336,7 @@ export class HalfAtwoodView {
     ctx.strokeStyle = "#2d5865";
     ctx.lineWidth = 2 * ratio;
     ctx.beginPath();
-    ctx.arc(pulleyX, pulleyY, 16 * ratio, 0, Math.PI * 2);
+    ctx.arc(pulleyX, pulleyY, pulleyRadius, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 

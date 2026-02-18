@@ -72,6 +72,7 @@ const elements = {
   hangingMassSelect: document.querySelector("#hangingMassSelect"),
   noiseCheckbox: document.querySelector("#noiseCheckbox"),
   showFbdCheckbox: document.querySelector("#showFbdCheckbox"),
+  themeToggleButton: document.querySelector("#themeToggleButton"),
   runTrialButton: document.querySelector("#runTrialButton"),
   addTrialButton: document.querySelector("#addTrialButton"),
   clearTrialsButton: document.querySelector("#clearTrialsButton"),
@@ -111,8 +112,8 @@ const elements = {
 
 const forceGraph = new TimeSeriesGraph({
   canvas: /** @type {HTMLCanvasElement} */ (document.querySelector("#forceCanvas")),
-  title: "Force vs Time",
-  yLabel: "Force (N)",
+  title: "Tension (Fₜ) vs Time",
+  yLabel: "Fₜ (N)",
   onSelectionChange(selection) {
     store.update((state) => ({
       ...state,
@@ -143,7 +144,7 @@ const velocityGraph = new TimeSeriesGraph({
 
 const fitGraph = new ScatterFitGraph({
   canvas: /** @type {HTMLCanvasElement} */ (document.querySelector("#fitCanvas")),
-  title: "Force vs Acceleration"
+  title: "Force of Tension (Fₜ) vs Acceleration"
 });
 
 const machineView = new HalfAtwoodView({
@@ -297,6 +298,12 @@ function bindEvents() {
     renderFbd();
   });
 
+  elements.themeToggleButton.addEventListener("click", () => {
+    const currentTheme = document.body.dataset.theme === "dark" ? "dark" : "light";
+    const nextTheme = currentTheme === "dark" ? "light" : "dark";
+    applyTheme(nextTheme);
+  });
+
   elements.runTrialButton.addEventListener("click", runTrial);
 
   elements.addTrialButton.addEventListener("click", () => {
@@ -335,7 +342,7 @@ function bindEvents() {
       trialRecords: [...previous.trialRecords, record]
     }));
 
-    setStatus("Trial added. Keep going to build your force-vs-acceleration trend line.", "ok");
+    setStatus("Trial added. Keep going to build your Force-of-Tension-vs-acceleration trend line.", "ok");
   });
 
   elements.clearTrialsButton.addEventListener("click", () => {
@@ -630,12 +637,12 @@ function renderFitView() {
   if (!fit) {
     elements.fitEquation.textContent = `Need at least 2 accepted ${scenarioTitle(state.scenario)} trials for a linear fit.`;
     elements.fitQuality.textContent = "R^2: --";
-    elements.fitInterpretation.innerHTML = "<li>Mathematical meaning: slope = rate of change of force with acceleration.</li><li>Physical meaning prompt: compare slope and intercept for part 1 vs part 2 after collecting enough data.</li>";
+    elements.fitInterpretation.innerHTML = "<li>Mathematical meaning: slope = rate of change of Force of Tension with acceleration.</li><li>Physical meaning prompt: compare slope and intercept for part 1 vs part 2 after collecting enough data.</li>";
     renderChecklist();
     return;
   }
 
-  elements.fitEquation.textContent = `F = (${fit.slope.toFixed(3)})a + (${fit.intercept.toFixed(3)})`;
+  elements.fitEquation.textContent = `Force of Tension, Fₜ = (${fit.slope.toFixed(3)} N/m/s^2)·a + (${fit.intercept.toFixed(3)} N)`;
   elements.fitQuality.textContent = `R^2 = ${fit.r2.toFixed(4)} with ${fit.count} points`;
 
   const scenarioPrompt = state.scenario === "cart_plus_pad"
@@ -643,8 +650,8 @@ function renderFitView() {
     : "For cart only, intercept should stay near zero when friction is minimal.";
 
   elements.fitInterpretation.innerHTML = [
-    `<li><strong>Mathematical slope:</strong> ${fit.slope.toFixed(3)} N/(m/s^2)</li>`,
-    `<li><strong>Mathematical intercept:</strong> ${fit.intercept.toFixed(3)} N</li>`,
+    `<li><strong>Mathematical slope:</strong> ${fit.slope.toFixed(3)} N/m/s^2</li>`,
+    `<li><strong>Mathematical intercept:</strong> ${fit.intercept.toFixed(3)} N (Force of Tension at a = 0)</li>`,
     "<li><strong>Physical meaning hint:</strong> Slope approximates effective accelerated mass of the system.</li>",
     "<li><strong>Physical meaning hint:</strong> Intercept represents resistive-force offset when acceleration trends toward zero.</li>",
     `<li><strong>Scenario check:</strong> ${scenarioPrompt}</li>`
@@ -718,32 +725,68 @@ function renderFbd() {
     });
 
   const tension = state.currentTrial?.physics.tensionN ?? state.hangingMassKg * 9.81;
-  const drag = config.dragN;
+  const friction = config.dragN;
   const weight = config.systemMassKg * 9.81;
 
   const isPadScenario = state.scenario === "cart_plus_pad";
   const objectLabel = isPadScenario ? "Cart + Pad" : "Cart";
+  const darkTheme = document.body.dataset.theme === "dark";
+  const vectorColor = darkTheme ? "#d8b767" : "#124d62";
+  const textColor = darkTheme ? "#eef2f9" : "#0b3342";
+  const bodyFill = darkTheme ? "#2a3446" : "#e6f4f8";
+  const bodyStroke = darkTheme ? "#d8b767" : "#124d62";
+  const padFill = darkTheme ? "#9a7c35" : "#cf8f2f";
 
   elements.fbdFigure.innerHTML = `
     <svg viewBox="0 0 520 220" role="img" aria-label="Free-body diagram for ${objectLabel}">
       <defs>
         <marker id="arrowHead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-          <polygon points="0 0, 10 3.5, 0 7" fill="#124d62"></polygon>
+          <polygon points="0 0, 10 3.5, 0 7" fill="${vectorColor}"></polygon>
         </marker>
       </defs>
-      <rect x="180" y="90" width="140" height="70" rx="8" fill="#e6f4f8" stroke="#124d62" stroke-width="2"></rect>
-      ${isPadScenario ? '<rect x="190" y="165" width="120" height="10" rx="2" fill="#cf8f2f"></rect>' : ""}
-      <line x1="320" y1="125" x2="430" y2="125" stroke="#124d62" stroke-width="3" marker-end="url(#arrowHead)"></line>
-      <line x1="180" y1="125" x2="90" y2="125" stroke="#124d62" stroke-width="3" marker-end="url(#arrowHead)"></line>
-      <line x1="250" y1="90" x2="250" y2="25" stroke="#124d62" stroke-width="3" marker-end="url(#arrowHead)"></line>
-      <line x1="250" y1="160" x2="250" y2="210" stroke="#124d62" stroke-width="3" marker-end="url(#arrowHead)"></line>
-      <text x="345" y="112" fill="#0b3342" font-size="13">Tension ≈ ${tension.toFixed(2)} N</text>
-      <text x="55" y="112" fill="#0b3342" font-size="13">Drag ≈ ${drag.toFixed(2)} N</text>
-      <text x="260" y="45" fill="#0b3342" font-size="13">Normal ≈ ${weight.toFixed(2)} N</text>
-      <text x="258" y="205" fill="#0b3342" font-size="13">Weight ≈ ${weight.toFixed(2)} N</text>
-      <text x="205" y="130" fill="#0b3342" font-size="14">${objectLabel}</text>
+      <rect x="180" y="90" width="140" height="70" rx="8" fill="${bodyFill}" stroke="${bodyStroke}" stroke-width="2"></rect>
+      ${isPadScenario ? `<rect x="190" y="165" width="120" height="10" rx="2" fill="${padFill}"></rect>` : ""}
+      <line x1="250" y1="125" x2="430" y2="125" stroke="${vectorColor}" stroke-width="3" marker-end="url(#arrowHead)"></line>
+      <line x1="250" y1="125" x2="70" y2="125" stroke="${vectorColor}" stroke-width="3" marker-end="url(#arrowHead)"></line>
+      <line x1="250" y1="125" x2="250" y2="25" stroke="${vectorColor}" stroke-width="3" marker-end="url(#arrowHead)"></line>
+      <line x1="250" y1="125" x2="250" y2="210" stroke="${vectorColor}" stroke-width="3" marker-end="url(#arrowHead)"></line>
+      <line x1="244" y1="74" x2="256" y2="84" stroke="${vectorColor}" stroke-width="2"></line>
+      <line x1="244" y1="176" x2="256" y2="186" stroke="${vectorColor}" stroke-width="2"></line>
+      <circle cx="250" cy="125" r="3.5" fill="${vectorColor}"></circle>
+      <text x="12" y="34" fill="${textColor}" font-size="11">
+        <tspan>F<tspan baseline-shift="sub" font-size="8">N</tspan> on ${objectLabel} by Track</tspan>
+        <tspan x="12" dy="14">≈ ${weight.toFixed(2)} N</tspan>
+      </text>
+      <text x="302" y="34" fill="${textColor}" font-size="11">
+        <tspan>Force of Tension: F<tspan baseline-shift="sub" font-size="8">t</tspan> on ${objectLabel} by String</tspan>
+        <tspan x="302" dy="14">≈ ${tension.toFixed(2)} N</tspan>
+      </text>
+      <text x="12" y="180" fill="${textColor}" font-size="11">
+        <tspan>F<tspan baseline-shift="sub" font-size="8">f</tspan> on ${objectLabel} by Track</tspan>
+        <tspan x="12" dy="14">≈ ${friction.toFixed(2)} N</tspan>
+      </text>
+      <text x="302" y="180" fill="${textColor}" font-size="11">
+        <tspan>F<tspan baseline-shift="sub" font-size="8">g</tspan> on ${objectLabel} by Earth</tspan>
+        <tspan x="302" dy="14">≈ ${weight.toFixed(2)} N</tspan>
+      </text>
+      <text x="225" y="118" fill="${textColor}" font-size="14">${objectLabel}</text>
+      <text x="263" y="146" fill="${textColor}" font-size="11">center of mass</text>
     </svg>
   `;
+}
+
+/**
+ * @param {"light"|"dark"} theme
+ */
+function applyTheme(theme) {
+  document.body.dataset.theme = theme;
+  elements.themeToggleButton.textContent = theme === "dark" ? "Light Mode" : "Dark Mode";
+  elements.themeToggleButton.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
+  renderFbd();
+}
+
+function initTheme() {
+  applyTheme("light");
 }
 
 /**
@@ -785,6 +828,7 @@ function renderAll() {
 function init() {
   hydrateSelectors();
   bindEvents();
+  initTheme();
 
   const defaultPreset = getPresetById(store.getState().presetId);
   store.setState({ noiseEnabled: defaultPreset.noiseDefault });
