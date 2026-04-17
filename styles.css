@@ -1,4 +1,5 @@
 :root {
+
   --bg-950: #e9f4fb;
   --bg-900: #fff4dd;
   --bg-800: #ffffff;
@@ -50,6 +51,7 @@
   --fbd-bg: #f9fcff;
   --readout-border: #d0e1e8;
   --readout-bg: #f5fbfe;
+
 }
 
 
@@ -59,15 +61,10 @@
 }
 
 body {
-  margin: 0;
-  min-height: 100vh;
-  font-family: "Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif;
-  color: var(--ink);
-  background:
-    radial-gradient(1200px 700px at 8% 2%, var(--glow-a), transparent 62%),
-    radial-gradient(900px 600px at 92% 98%, var(--glow-b), transparent 66%),
-    linear-gradient(165deg, var(--bg-top), var(--bg-bottom));
-  transition: background 180ms ease, color 180ms ease;
+  font-family: "Inter", "IBM Plex Sans", sans-serif;
+  color: var(--text-100);
+  background: #e9f4fb;
+  line-height: 1.45;
 }
 
 h1,
@@ -172,8 +169,9 @@ button {
   background: linear-gradient(160deg, #0d839f, #0b5f77);
   color: #ffffff;
   font-weight: 700;
-
-  font: inherit;
+  border: 1px solid #0a5d74;
+  padding: 0.58rem 0.82rem;
+  cursor: pointer;
 }
 
 select {
@@ -207,12 +205,8 @@ button {
   background: linear-gradient(160deg, #0d839f, #0b5f77);
   color: #ffffff;
   font-weight: 700;
-
-  border: 1px solid var(--btn-border);
-  border-radius: 8px;
-  padding: 0.5rem 0.55rem;
-  background: var(--btn-bg);
-  color: var(--ink);
+  border: 1px solid #0a5d74;
+  padding: 0.58rem 0.82rem;
   cursor: pointer;
 }
 
@@ -366,8 +360,9 @@ td {
   background: linear-gradient(160deg, #0d839f, #0b5f77);
   color: #ffffff;
   font-weight: 700;
-
-  padding: 0.3rem 0.45rem;
+  border: 1px solid #0a5d74;
+  padding: 0.58rem 0.82rem;
+  cursor: pointer;
 }
 
 .graphs-column {
@@ -402,9 +397,9 @@ td {
   background: linear-gradient(160deg, #0d839f, #0b5f77);
   color: #ffffff;
   font-weight: 700;
-
-  font-size: 0.77rem;
-  padding: 0.28rem 0.4rem;
+  border: 1px solid #0a5d74;
+  padding: 0.58rem 0.82rem;
+  cursor: pointer;
 }
 
 .graph {
