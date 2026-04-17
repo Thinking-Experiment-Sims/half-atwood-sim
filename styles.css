@@ -1,4 +1,15 @@
 :root {
+  --bg-950: #e9f4fb;
+  --bg-900: #fff4dd;
+  --bg-800: #ffffff;
+  --text-100: #123140;
+  --text-300: #4b6570;
+  --gold-500: #0f7e9b;
+  --gold-400: #0b5f77;
+  --surface: rgba(255, 255, 255, 0.96);
+  --border: #c8dbe3;
+  --shadow-lg: 0 12px 24px rgba(12, 54, 68, 0.12);
+
   --bg-top: #e9f4fb;
   --bg-bottom: #fff4dd;
   --card: #ffffff;
@@ -41,48 +52,7 @@
   --readout-bg: #f5fbfe;
 }
 
-body[data-theme="dark"] {
-  --bg-top: #090b0f;
-  --bg-bottom: #11141b;
-  --card: #1e2430;
-  --ink: #eef2f9;
-  --muted: #c9d1df;
-  --accent: #c8a24a;
-  --accent-strong: #d8b767;
-  --warm: #e5cc8f;
-  --ok: #8fd9ac;
-  --warn: #e6c37f;
-  --border: #2a3342;
-  --shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
-  --glow-a: rgba(200, 162, 74, 0.16);
-  --glow-b: rgba(216, 183, 103, 0.14);
-  --field-border: #3c4658;
-  --field-bg: #0f131a;
-  --btn-border: #465166;
-  --btn-bg: #141922;
-  --btn-primary-top: #c8a24a;
-  --btn-primary-bottom: #a98535;
-  --btn-primary-text: #101318;
-  --btn-primary-border: #d8b767;
-  --focus-ring: #d8b767;
-  --status-bg: #151b25;
-  --warn-bg: #2a2214;
-  --warn-border: #6d5930;
-  --check-bg: #151b25;
-  --check-muted: #a9b2c3;
-  --check-done-bg: #1f2a23;
-  --metric-border: #394457;
-  --metric-bg-top: #141922;
-  --metric-bg-bottom: #0f141c;
-  --table-head-bg: #18212d;
-  --table-row-border: #2e394a;
-  --graph-border: #3a4657;
-  --graph-bg: #0f141c;
-  --fbd-border: #3a4657;
-  --fbd-bg: #0f141c;
-  --readout-border: #344052;
-  --readout-bg: #121924;
-}
+
 
 * {
   box-sizing: border-box;
@@ -198,6 +168,11 @@ label {
 
 select,
 button {
+  border-radius: 10px;
+  background: linear-gradient(160deg, #0d839f, #0b5f77);
+  color: #ffffff;
+  font-weight: 700;
+
   font: inherit;
 }
 
@@ -228,6 +203,11 @@ select {
 }
 
 button {
+  border-radius: 10px;
+  background: linear-gradient(160deg, #0d839f, #0b5f77);
+  color: #ffffff;
+  font-weight: 700;
+
   border: 1px solid var(--btn-border);
   border-radius: 8px;
   padding: 0.5rem 0.55rem;
@@ -382,6 +362,11 @@ td {
 }
 
 .table-button {
+  border-radius: 10px;
+  background: linear-gradient(160deg, #0d839f, #0b5f77);
+  color: #ffffff;
+  font-weight: 700;
+
   padding: 0.3rem 0.45rem;
 }
 
@@ -413,6 +398,11 @@ td {
 }
 
 .nudge-controls button {
+  border-radius: 10px;
+  background: linear-gradient(160deg, #0d839f, #0b5f77);
+  color: #ffffff;
+  font-weight: 700;
+
   font-size: 0.77rem;
   padding: 0.28rem 0.4rem;
 }
