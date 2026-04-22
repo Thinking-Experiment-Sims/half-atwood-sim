@@ -72,7 +72,6 @@ const elements = {
   hangingMassSelect: document.querySelector("#hangingMassSelect"),
   noiseCheckbox: document.querySelector("#noiseCheckbox"),
   showFbdCheckbox: document.querySelector("#showFbdCheckbox"),
-  themeToggleButton: document.querySelector("#themeToggleButton"),
   runTrialButton: document.querySelector("#runTrialButton"),
   addTrialButton: document.querySelector("#addTrialButton"),
   clearTrialsButton: document.querySelector("#clearTrialsButton"),
@@ -296,12 +295,6 @@ function bindEvents() {
       showFbd: elements.showFbdCheckbox.checked
     });
     renderFbd();
-  });
-
-  elements.themeToggleButton.addEventListener("click", () => {
-    const currentTheme = document.body.dataset.theme === "dark" ? "dark" : "light";
-    const nextTheme = currentTheme === "dark" ? "light" : "dark";
-    applyTheme(nextTheme);
   });
 
   elements.runTrialButton.addEventListener("click", runTrial);
@@ -730,12 +723,11 @@ function renderFbd() {
 
   const isPadScenario = state.scenario === "cart_plus_pad";
   const objectLabel = isPadScenario ? "Cart + Pad" : "Cart";
-  const darkTheme = document.body.dataset.theme === "dark";
-  const vectorColor = darkTheme ? "#d8b767" : "#124d62";
-  const textColor = darkTheme ? "#eef2f9" : "#0b3342";
-  const bodyFill = darkTheme ? "#2a3446" : "#e6f4f8";
-  const bodyStroke = darkTheme ? "#d8b767" : "#124d62";
-  const padFill = darkTheme ? "#9a7c35" : "#cf8f2f";
+  const vectorColor = "#124d62";
+  const textColor = "#0b3342";
+  const bodyFill = "#e6f4f8";
+  const bodyStroke = "#124d62";
+  const padFill = "#cf8f2f";
 
   elements.fbdFigure.innerHTML = `
     <svg viewBox="0 0 520 220" role="img" aria-label="Free-body diagram for ${objectLabel}">
@@ -773,20 +765,6 @@ function renderFbd() {
       <text x="263" y="146" fill="${textColor}" font-size="11">center of mass</text>
     </svg>
   `;
-}
-
-/**
- * @param {"light"|"dark"} theme
- */
-function applyTheme(theme) {
-  document.body.dataset.theme = theme;
-  elements.themeToggleButton.textContent = theme === "dark" ? "Light Mode" : "Dark Mode";
-  elements.themeToggleButton.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
-  renderFbd();
-}
-
-function initTheme() {
-  applyTheme("light");
 }
 
 /**
@@ -828,7 +806,6 @@ function renderAll() {
 function init() {
   hydrateSelectors();
   bindEvents();
-  initTheme();
 
   const defaultPreset = getPresetById(store.getState().presetId);
   store.setState({ noiseEnabled: defaultPreset.noiseDefault });

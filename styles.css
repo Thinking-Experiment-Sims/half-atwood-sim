@@ -95,21 +95,6 @@ ul {
   margin-bottom: 1rem;
 }
 
-.theme-toggle-btn {
-  position: absolute;
-  top: 0.7rem;
-  right: 0.8rem;
-  border: 1px solid var(--accent-strong);
-  background: linear-gradient(160deg, var(--btn-primary-top), var(--btn-primary-bottom));
-  color: var(--btn-primary-text);
-  font-weight: 700;
-  font-size: 0.82rem;
-  letter-spacing: 0.02em;
-  padding: 0.38rem 0.7rem;
-  border-radius: 999px;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
-}
-
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.09em;
