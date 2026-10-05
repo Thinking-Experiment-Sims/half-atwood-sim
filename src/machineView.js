@@ -396,14 +396,14 @@ export class HalfAtwoodView {
 
     // Cart (at start position)
     const cartX = trackLeft + 18 * ratio;
-    const cartW = 74 * ratio;
+    const cartW = 80 * ratio;
     const cartH = 38 * ratio;
     const wheelR = 7.5 * ratio;
     const cartBodyH = cartH - wheelR;
     const cartBodyY = trackSurfaceY - cartH;
 
     // Wheels
-    for (const wx of [cartX + 14 * ratio, cartX + cartW - 14 * ratio]) {
+    for (const wx of [cartX + 16 * ratio, cartX + cartW - 16 * ratio]) {
       ctx.fillStyle = "#253b47";
       ctx.beginPath();
       ctx.arc(wx, trackSurfaceY - wheelR, wheelR, 0, Math.PI * 2);
@@ -437,7 +437,7 @@ export class HalfAtwoodView {
     ctx.fill();
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = `700 ${11 * ratio}px 'IBM Plex Sans', sans-serif`;
+    ctx.font = `600 ${9.5 * ratio}px 'IBM Plex Sans', sans-serif`;
     ctx.fillText("Cart + Sensor", cartX + 8 * ratio, cartBodyY + cartBodyH - 6 * ratio);
 
     // Tie hook
