@@ -83,6 +83,43 @@ function cartDisplacementM(trial, timeS) {
   return accelDistance + 0.5 * peakVelocity * stopDuration;
 }
 
+/**
+ * Draws a clean directional vector arrow with arrowhead
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} fromX
+ * @param {number} fromY
+ * @param {number} toX
+ * @param {number} toY
+ * @param {string} color
+ * @param {number} lineWidth
+ */
+function drawArrow(ctx, fromX, fromY, toX, toY, color, lineWidth = 2.5) {
+  const dx = toX - fromX;
+  const dy = toY - fromY;
+  const length = Math.hypot(dx, dy);
+  if (length < 2) return;
+
+  const headLength = Math.min(8, length * 0.4);
+  const angle = Math.atan2(dy, dx);
+
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = "round";
+
+  ctx.beginPath();
+  ctx.moveTo(fromX, fromY);
+  ctx.lineTo(toX, toY);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(toX, toY);
+  ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+  ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+  ctx.closePath();
+  ctx.fill();
+}
+
 export class HalfAtwoodView {
   /**
    * @param {{
@@ -217,63 +254,247 @@ export class HalfAtwoodView {
     const ctx = this.context;
     const width = this.canvas.width;
     const height = this.canvas.height;
+
     ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = "#f6fbfd";
+
+    // Pure white canvas background with faint engineering grid
+    ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, width, height);
 
-    const trackLeft = 55 * ratio;
-    const trackRight = width - 185 * ratio;
-    const trackY = 125 * ratio;
-    const pulleyX = trackRight + 58 * ratio;
-    const pulleyY = trackY + 12 * ratio;
-    const cartX = trackLeft + 20 * ratio;
-    const massTopY = pulleyY + 26 * ratio;
+    ctx.strokeStyle = "rgba(15, 126, 155, 0.04)";
+    ctx.lineWidth = 1;
+    for (let gx = 20 * ratio; gx < width; gx += 25 * ratio) {
+      ctx.beginPath();
+      ctx.moveTo(gx, 0);
+      ctx.lineTo(gx, height);
+      ctx.stroke();
+    }
+    for (let gy = 20 * ratio; gy < height; gy += 25 * ratio) {
+      ctx.beginPath();
+      ctx.moveTo(0, gy);
+      ctx.lineTo(width, gy);
+      ctx.stroke();
+    }
 
-    ctx.strokeStyle = "#2d5865";
+    const trackLeft = 55 * ratio;
+    const trackRight = width - 170 * ratio;
+    const trackSurfaceY = 96 * ratio;
+    const trackH = 12 * ratio;
+    const tableTopY = trackSurfaceY - trackH;
+    const floorY = height - 20 * ratio;
+    const tableThickness = 16 * ratio;
+
+    // Floor Line
+    ctx.strokeStyle = "#c8dbe3";
+    ctx.lineWidth = 2 * ratio;
+    ctx.beginPath();
+    ctx.moveTo(0, floorY);
+    ctx.lineTo(width, floorY);
+    ctx.stroke();
+
+    // Table Support Legs
+    const legLeftX = trackLeft + 25 * ratio;
+    const legRightX = trackRight - 45 * ratio;
+    const legW = 14 * ratio;
+    ctx.fillStyle = "#e2edf2";
+    ctx.strokeStyle = "#b0c9d4";
+    ctx.lineWidth = 1.5 * ratio;
+    ctx.fillRect(legLeftX, trackSurfaceY + tableThickness, legW, floorY - (trackSurfaceY + tableThickness));
+    ctx.strokeRect(legLeftX, trackSurfaceY + tableThickness, legW, floorY - (trackSurfaceY + tableThickness));
+    ctx.fillRect(legRightX, trackSurfaceY + tableThickness, legW, floorY - (trackSurfaceY + tableThickness));
+    ctx.strokeRect(legRightX, trackSurfaceY + tableThickness, legW, floorY - (trackSurfaceY + tableThickness));
+
+    // Tabletop slab
+    const tableGrad = ctx.createLinearGradient(0, trackSurfaceY, 0, trackSurfaceY + tableThickness);
+    tableGrad.addColorStop(0, "#f4f9fb");
+    tableGrad.addColorStop(1, "#dceaf0");
+    ctx.fillStyle = tableGrad;
+    ctx.beginPath();
+    ctx.roundRect(trackLeft - 20 * ratio, trackSurfaceY, trackRight - trackLeft + 30 * ratio, tableThickness, [0, 4 * ratio, 4 * ratio, 0]);
+    ctx.fill();
+    ctx.strokeStyle = "#9bbecb";
+    ctx.lineWidth = 1.8 * ratio;
+    ctx.stroke();
+
+    // Dynamics Track
+    const trackGrad = ctx.createLinearGradient(0, tableTopY, 0, trackSurfaceY);
+    trackGrad.addColorStop(0, "#e9f2f6");
+    trackGrad.addColorStop(0.5, "#d5e4ec");
+    trackGrad.addColorStop(1, "#b5ccd7");
+    ctx.fillStyle = trackGrad;
+    ctx.fillRect(trackLeft, tableTopY, trackRight - trackLeft, trackH);
+    ctx.strokeStyle = "#658595";
+    ctx.lineWidth = 1.6 * ratio;
+    ctx.strokeRect(trackLeft, tableTopY, trackRight - trackLeft, trackH);
+
+    // End-stop bumpers
+    ctx.fillStyle = "#2d434e";
+    ctx.fillRect(trackLeft, tableTopY - 12 * ratio, 8 * ratio, trackH + 12 * ratio);
+    ctx.fillRect(trackRight - 8 * ratio, tableTopY - 12 * ratio, 8 * ratio, trackH + 12 * ratio);
+    ctx.fillStyle = "#d67b19";
+    ctx.fillRect(trackLeft + 2 * ratio, tableTopY - 8 * ratio, 4 * ratio, 6 * ratio);
+    ctx.fillRect(trackRight - 6 * ratio, tableTopY - 8 * ratio, 4 * ratio, 6 * ratio);
+
+    // Track Metric Ruler Ticks
+    ctx.fillStyle = "#2d4e5c";
+    ctx.font = `600 ${9 * ratio}px 'IBM Plex Sans', sans-serif`;
+    const trackSpan = trackRight - trackLeft - 30 * ratio;
+    for (let i = 0; i <= 3; i += 1) {
+      const mx = trackLeft + 15 * ratio + (i / 3) * trackSpan;
+      ctx.strokeStyle = "#416575";
+      ctx.lineWidth = 1.2 * ratio;
+      ctx.beginPath();
+      ctx.moveTo(mx, tableTopY);
+      ctx.lineTo(mx, tableTopY + 5 * ratio);
+      ctx.stroke();
+      ctx.fillText(`${(i * 0.5).toFixed(1)}m`, mx - 8 * ratio, tableTopY + 18 * ratio);
+    }
+
+    // Pulley Bracket and Wheel
+    const pulleyRadius = 15 * ratio;
+    const pulleyX = trackRight + pulleyRadius + 2 * ratio;
+    const pulleyY = trackSurfaceY - 4 * ratio;
+
+    // Bracket
+    ctx.fillStyle = "#435d6a";
+    ctx.fillRect(trackRight, trackSurfaceY - 4 * ratio, 8 * ratio, tableThickness + 8 * ratio);
+    ctx.strokeStyle = "#253b45";
+    ctx.lineWidth = 1.2 * ratio;
+    ctx.strokeRect(trackRight, trackSurfaceY - 4 * ratio, 8 * ratio, tableThickness + 8 * ratio);
+
+    // Pulley Arm
+    ctx.strokeStyle = "#5b7785";
     ctx.lineWidth = 3 * ratio;
     ctx.beginPath();
-    ctx.moveTo(trackLeft, trackY + 28 * ratio);
-    ctx.lineTo(trackRight, trackY + 28 * ratio);
+    ctx.moveTo(trackRight + 8 * ratio, trackSurfaceY);
+    ctx.lineTo(pulleyX, pulleyY);
     ctx.stroke();
 
-    const pulleyRadius = 16 * ratio;
-    const cartStringX = cartX + 76 * ratio;
-    const cartStringY = trackY + 12 * ratio;
-
-    ctx.strokeStyle = "#507885";
-    ctx.lineWidth = 2 * ratio;
-    ctx.beginPath();
-    ctx.moveTo(cartStringX, cartStringY);
-    ctx.lineTo(pulleyX - pulleyRadius, pulleyY);
-    ctx.arc(pulleyX, pulleyY, pulleyRadius, Math.PI, Math.PI / 2, true);
-    ctx.lineTo(pulleyX, massTopY);
-    ctx.stroke();
-
-    ctx.fillStyle = "#dceff4";
-    ctx.strokeStyle = "#2d5865";
-    ctx.lineWidth = 2 * ratio;
+    // Pulley Wheel
+    ctx.fillStyle = "#edf3f6";
     ctx.beginPath();
     ctx.arc(pulleyX, pulleyY, pulleyRadius, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = "#0f7e9b";
+    ctx.lineWidth = 2 * ratio;
     ctx.stroke();
 
-    ctx.fillStyle = "#76b7cb";
-    ctx.strokeStyle = "#1b5568";
-    ctx.fillRect(cartX, trackY - 5 * ratio, 76 * ratio, 34 * ratio);
-    ctx.strokeRect(cartX, trackY - 5 * ratio, 76 * ratio, 34 * ratio);
+    // Spokes
+    for (let i = 0; i < 6; i += 1) {
+      const angle = (i * Math.PI) / 3;
+      ctx.strokeStyle = "#658290";
+      ctx.lineWidth = 1.2 * ratio;
+      ctx.beginPath();
+      ctx.moveTo(pulleyX, pulleyY);
+      ctx.lineTo(pulleyX + (pulleyRadius - 2 * ratio) * Math.cos(angle), pulleyY + (pulleyRadius - 2 * ratio) * Math.sin(angle));
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#123140";
+    ctx.beginPath();
+    ctx.arc(pulleyX, pulleyY, 3.5 * ratio, 0, Math.PI * 2);
+    ctx.fill();
 
-    ctx.fillStyle = "#8ab1bf";
-    ctx.fillRect(pulleyX - 16 * ratio, massTopY, 32 * ratio, 36 * ratio);
-    ctx.strokeRect(pulleyX - 16 * ratio, massTopY, 32 * ratio, 36 * ratio);
+    // Cart (at start position)
+    const cartX = trackLeft + 18 * ratio;
+    const cartW = 74 * ratio;
+    const cartH = 38 * ratio;
+    const wheelR = 7.5 * ratio;
+    const cartBodyH = cartH - wheelR;
+    const cartBodyY = trackSurfaceY - cartH;
 
-    ctx.fillStyle = "#203f4a";
-    ctx.font = `${12 * ratio}px 'Trebuchet MS', sans-serif`;
-    ctx.fillText("Track", trackLeft, trackY + 56 * ratio);
-    ctx.fillText("Pulley", pulleyX - 20 * ratio, pulleyY - 24 * ratio);
-    ctx.fillText("Cart + Force Sensor", cartX - 2 * ratio, trackY - 16 * ratio);
-    ctx.font = `${14 * ratio}px 'Trebuchet MS', sans-serif`;
-    ctx.fillStyle = "#2f5c69";
-    ctx.fillText("Run a trial to animate this Half Atwood setup.", 24 * ratio, 42 * ratio);
+    // Wheels
+    for (const wx of [cartX + 14 * ratio, cartX + cartW - 14 * ratio]) {
+      ctx.fillStyle = "#253b47";
+      ctx.beginPath();
+      ctx.arc(wx, trackSurfaceY - wheelR, wheelR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#0f7e9b";
+      ctx.lineWidth = 1.5 * ratio;
+      ctx.stroke();
+      ctx.fillStyle = "#dce7eb";
+      ctx.beginPath();
+      ctx.arc(wx, trackSurfaceY - wheelR, 2.5 * ratio, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Cart Body (Signature Teal)
+    const cartGrad = ctx.createLinearGradient(cartX, cartBodyY, cartX, cartBodyY + cartBodyH);
+    cartGrad.addColorStop(0, "#1495b5");
+    cartGrad.addColorStop(0.4, "#0f7e9b");
+    cartGrad.addColorStop(1, "#095a6f");
+    ctx.fillStyle = cartGrad;
+    ctx.strokeStyle = "#084959";
+    ctx.lineWidth = 1.8 * ratio;
+    ctx.beginPath();
+    ctx.roundRect(cartX, cartBodyY, cartW, cartBodyH, 4 * ratio);
+    ctx.fill();
+    ctx.stroke();
+
+    // Mass tray & Force Sensor Box
+    ctx.fillStyle = "rgba(18, 49, 64, 0.25)";
+    ctx.beginPath();
+    ctx.roundRect(cartX + 6 * ratio, cartBodyY + 3 * ratio, cartW - 12 * ratio, 12 * ratio, 2 * ratio);
+    ctx.fill();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `700 ${11 * ratio}px 'IBM Plex Sans', sans-serif`;
+    ctx.fillText("Cart + Sensor", cartX + 8 * ratio, cartBodyY + cartBodyH - 6 * ratio);
+
+    // Tie hook
+    const hookX = cartX + cartW;
+    const hookY = trackSurfaceY - 18 * ratio;
+    ctx.fillStyle = "#2d4e5c";
+    ctx.beginPath();
+    ctx.arc(hookX, hookY, 3 * ratio, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hanging Mass
+    const hangX = pulleyX + pulleyRadius;
+    const hangStartY = pulleyY + pulleyRadius + 14 * ratio;
+    const massW = 38 * ratio;
+    const massH = 44 * ratio;
+
+    // String
+    ctx.strokeStyle = "#1b3846";
+    ctx.lineWidth = 2 * ratio;
+    ctx.beginPath();
+    ctx.moveTo(hookX, hookY);
+    ctx.lineTo(pulleyX, pulleyY - pulleyRadius);
+    ctx.arc(pulleyX, pulleyY, pulleyRadius, -Math.PI / 2, 0, false);
+    ctx.lineTo(hangX, hangStartY);
+    ctx.stroke();
+
+    // Slotted Mass Hanger (Amber accent)
+    const massGrad = ctx.createLinearGradient(hangX - massW / 2, hangStartY, hangX - massW / 2, hangStartY + massH);
+    massGrad.addColorStop(0, "#d67b19");
+    massGrad.addColorStop(0.4, "#e5933a");
+    massGrad.addColorStop(1, "#b5620b");
+    ctx.fillStyle = massGrad;
+    ctx.strokeStyle = "#7a3f05";
+    ctx.lineWidth = 1.5 * ratio;
+    ctx.beginPath();
+    ctx.roundRect(hangX - massW / 2, hangStartY + 8 * ratio, massW, massH - 8 * ratio, 4 * ratio);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `700 ${10 * ratio}px 'IBM Plex Sans', sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillText("mₕ", hangX, hangStartY + 24 * ratio);
+    ctx.textAlign = "left";
+
+    // Cushion
+    ctx.fillStyle = "#edf5f8";
+    ctx.strokeStyle = "#a9c5d1";
+    ctx.lineWidth = 1.2 * ratio;
+    ctx.beginPath();
+    ctx.roundRect(hangX - 25 * ratio, floorY - 10 * ratio, 50 * ratio, 10 * ratio, 3 * ratio);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.font = `600 ${13 * ratio}px 'Inter', sans-serif`;
+    ctx.fillStyle = "#0a5d74";
+    ctx.fillText("Run a trial to simulate the Half Atwood apparatus.", 24 * ratio, 34 * ratio);
 
     this.timeValue.textContent = "0.00 s";
     this.phaseValue.textContent = "--";
@@ -296,72 +517,301 @@ export class HalfAtwoodView {
     const height = this.canvas.height;
 
     ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = "#f6fbfd";
+
+    // Pure white canvas background with faint engineering grid
+    ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, width, height);
 
+    ctx.strokeStyle = "rgba(15, 126, 155, 0.04)";
+    ctx.lineWidth = 1;
+    for (let gx = 20 * ratio; gx < width; gx += 25 * ratio) {
+      ctx.beginPath();
+      ctx.moveTo(gx, 0);
+      ctx.lineTo(gx, height);
+      ctx.stroke();
+    }
+    for (let gy = 20 * ratio; gy < height; gy += 25 * ratio) {
+      ctx.beginPath();
+      ctx.moveTo(0, gy);
+      ctx.lineTo(width, gy);
+      ctx.stroke();
+    }
+
     const trackLeft = 55 * ratio;
-    const trackRight = width - 185 * ratio;
-    const trackY = 125 * ratio;
-    const pulleyX = trackRight + 58 * ratio;
-    const pulleyY = trackY + 12 * ratio;
-    const cartBaseX = trackLeft + 20 * ratio;
+    const trackRight = width - 170 * ratio;
+    const trackSurfaceY = 96 * ratio;
+    const trackH = 12 * ratio;
+    const tableTopY = trackSurfaceY - trackH;
+    const floorY = height - 20 * ratio;
+    const tableThickness = 16 * ratio;
+
+    // Floor Line
+    ctx.strokeStyle = "#c8dbe3";
+    ctx.lineWidth = 2 * ratio;
+    ctx.beginPath();
+    ctx.moveTo(0, floorY);
+    ctx.lineTo(width, floorY);
+    ctx.stroke();
+
+    // Table Support Legs
+    const legLeftX = trackLeft + 25 * ratio;
+    const legRightX = trackRight - 45 * ratio;
+    const legW = 14 * ratio;
+    ctx.fillStyle = "#e2edf2";
+    ctx.strokeStyle = "#b0c9d4";
+    ctx.lineWidth = 1.5 * ratio;
+    ctx.fillRect(legLeftX, trackSurfaceY + tableThickness, legW, floorY - (trackSurfaceY + tableThickness));
+    ctx.strokeRect(legLeftX, trackSurfaceY + tableThickness, legW, floorY - (trackSurfaceY + tableThickness));
+    ctx.fillRect(legRightX, trackSurfaceY + tableThickness, legW, floorY - (trackSurfaceY + tableThickness));
+    ctx.strokeRect(legRightX, trackSurfaceY + tableThickness, legW, floorY - (trackSurfaceY + tableThickness));
+
+    // Tabletop slab
+    const tableGrad = ctx.createLinearGradient(0, trackSurfaceY, 0, trackSurfaceY + tableThickness);
+    tableGrad.addColorStop(0, "#f4f9fb");
+    tableGrad.addColorStop(1, "#dceaf0");
+    ctx.fillStyle = tableGrad;
+    ctx.beginPath();
+    ctx.roundRect(trackLeft - 20 * ratio, trackSurfaceY, trackRight - trackLeft + 30 * ratio, tableThickness, [0, 4 * ratio, 4 * ratio, 0]);
+    ctx.fill();
+    ctx.strokeStyle = "#9bbecb";
+    ctx.lineWidth = 1.8 * ratio;
+    ctx.stroke();
+
+    // Dynamics Track
+    const trackGrad = ctx.createLinearGradient(0, tableTopY, 0, trackSurfaceY);
+    trackGrad.addColorStop(0, "#e9f2f6");
+    trackGrad.addColorStop(0.5, "#d5e4ec");
+    trackGrad.addColorStop(1, "#b5ccd7");
+    ctx.fillStyle = trackGrad;
+    ctx.fillRect(trackLeft, tableTopY, trackRight - trackLeft, trackH);
+    ctx.strokeStyle = "#658595";
+    ctx.lineWidth = 1.6 * ratio;
+    ctx.strokeRect(trackLeft, tableTopY, trackRight - trackLeft, trackH);
+
+    // End-stop bumpers
+    ctx.fillStyle = "#2d434e";
+    ctx.fillRect(trackLeft, tableTopY - 12 * ratio, 8 * ratio, trackH + 12 * ratio);
+    ctx.fillRect(trackRight - 8 * ratio, tableTopY - 12 * ratio, 8 * ratio, trackH + 12 * ratio);
+    ctx.fillStyle = "#d67b19";
+    ctx.fillRect(trackLeft + 2 * ratio, tableTopY - 8 * ratio, 4 * ratio, 6 * ratio);
+    ctx.fillRect(trackRight - 6 * ratio, tableTopY - 8 * ratio, 4 * ratio, 6 * ratio);
+
+    // Track Metric Ruler Ticks
+    ctx.fillStyle = "#2d4e5c";
+    ctx.font = `600 ${9 * ratio}px 'IBM Plex Sans', sans-serif`;
+    const trackSpan = trackRight - trackLeft - 30 * ratio;
+    for (let i = 0; i <= 3; i += 1) {
+      const mx = trackLeft + 15 * ratio + (i / 3) * trackSpan;
+      ctx.strokeStyle = "#416575";
+      ctx.lineWidth = 1.2 * ratio;
+      ctx.beginPath();
+      ctx.moveTo(mx, tableTopY);
+      ctx.lineTo(mx, tableTopY + 5 * ratio);
+      ctx.stroke();
+      ctx.fillText(`${(i * 0.5).toFixed(1)}m`, mx - 8 * ratio, tableTopY + 18 * ratio);
+    }
+
+    // Motion kinematics
+    const cartBaseX = trackLeft + 18 * ratio;
+    const cartW = 74 * ratio;
+    const cartH = 38 * ratio;
+    const wheelR = 7.5 * ratio;
+    const cartBodyH = cartH - wheelR;
+    const cartBodyY = trackSurfaceY - cartH;
+    const maxTravelPx = trackRight - cartBaseX - cartW - 14 * ratio;
 
     const displacement = cartDisplacementM(this.trial, this.currentTimeS);
-    const normalizedMove = clamp(displacement / 1.2, 0, 1);
-    const cartX = cartBaseX + normalizedMove * (trackRight - cartBaseX - 80 * ratio);
+    const maxExpectedDistance = 1.2;
+    const normalizedMove = clamp(displacement / maxExpectedDistance, 0, 1);
+    const cartX = cartBaseX + normalizedMove * maxTravelPx;
 
-    const massTopY = pulleyY + 26 * ratio + normalizedMove * 80 * ratio;
+    // Pulley
+    const pulleyRadius = 15 * ratio;
+    const pulleyX = trackRight + pulleyRadius + 2 * ratio;
+    const pulleyY = trackSurfaceY - 4 * ratio;
 
-    ctx.strokeStyle = "#2d5865";
+    // Bracket
+    ctx.fillStyle = "#435d6a";
+    ctx.fillRect(trackRight, trackSurfaceY - 4 * ratio, 8 * ratio, tableThickness + 8 * ratio);
+    ctx.strokeStyle = "#253b45";
+    ctx.lineWidth = 1.2 * ratio;
+    ctx.strokeRect(trackRight, trackSurfaceY - 4 * ratio, 8 * ratio, tableThickness + 8 * ratio);
+
+    // Pulley Arm
+    ctx.strokeStyle = "#5b7785";
     ctx.lineWidth = 3 * ratio;
     ctx.beginPath();
-    ctx.moveTo(trackLeft, trackY + 28 * ratio);
-    ctx.lineTo(trackRight, trackY + 28 * ratio);
+    ctx.moveTo(trackRight + 8 * ratio, trackSurfaceY);
+    ctx.lineTo(pulleyX, pulleyY);
     ctx.stroke();
 
-    const pulleyRadius = 16 * ratio;
-    const cartStringX = cartX + 76 * ratio;
-    const cartStringY = trackY + 12 * ratio;
+    // Pulley Spoked Wheel (Rotating)
+    ctx.save();
+    ctx.translate(pulleyX, pulleyY);
+    const pulleyRotation = (normalizedMove * maxTravelPx) / pulleyRadius;
+    ctx.rotate(pulleyRotation);
 
-    ctx.strokeStyle = "#507885";
-    ctx.lineWidth = 2 * ratio;
+    ctx.fillStyle = "#edf3f6";
     ctx.beginPath();
-    ctx.moveTo(cartStringX, cartStringY);
-    ctx.lineTo(pulleyX - pulleyRadius, pulleyY);
-    ctx.arc(pulleyX, pulleyY, pulleyRadius, Math.PI, Math.PI / 2, true);
-    ctx.lineTo(pulleyX, massTopY);
+    ctx.arc(0, 0, pulleyRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#0f7e9b";
+    ctx.lineWidth = 2 * ratio;
     ctx.stroke();
 
-    ctx.fillStyle = "#dceff4";
-    ctx.strokeStyle = "#2d5865";
+    for (let i = 0; i < 6; i += 1) {
+      ctx.rotate(Math.PI / 3);
+      ctx.strokeStyle = "#658290";
+      ctx.lineWidth = 1.2 * ratio;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(pulleyRadius - 2 * ratio, 0);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#123140";
+    ctx.beginPath();
+    ctx.arc(0, 0, 3.5 * ratio, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Tie hook
+    const hookX = cartX + cartW;
+    const hookY = trackSurfaceY - 18 * ratio;
+    ctx.fillStyle = "#2d4e5c";
+    ctx.beginPath();
+    ctx.arc(hookX, hookY, 3 * ratio, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hanging Mass
+    const hangX = pulleyX + pulleyRadius;
+    const hangStartY = pulleyY + pulleyRadius + 14 * ratio;
+    const maxDropPx = floorY - 14 * ratio - 44 * ratio - hangStartY;
+    const hangY = hangStartY + normalizedMove * maxDropPx;
+    const massW = 38 * ratio;
+    const massH = 44 * ratio;
+
+    // Braided String
+    ctx.strokeStyle = "#1b3846";
     ctx.lineWidth = 2 * ratio;
     ctx.beginPath();
-    ctx.arc(pulleyX, pulleyY, pulleyRadius, 0, Math.PI * 2);
+    ctx.moveTo(hookX, hookY);
+    ctx.lineTo(pulleyX, pulleyY - pulleyRadius);
+    ctx.arc(pulleyX, pulleyY, pulleyRadius, -Math.PI / 2, 0, false);
+    ctx.lineTo(hangX, hangY);
+    ctx.stroke();
+
+    // Slotted Mass Hanger
+    const massGrad = ctx.createLinearGradient(hangX - massW / 2, hangY, hangX - massW / 2, hangY + massH);
+    massGrad.addColorStop(0, "#d67b19");
+    massGrad.addColorStop(0.4, "#e5933a");
+    massGrad.addColorStop(1, "#b5620b");
+    ctx.fillStyle = massGrad;
+    ctx.strokeStyle = "#7a3f05";
+    ctx.lineWidth = 1.5 * ratio;
+    ctx.beginPath();
+    ctx.roundRect(hangX - massW / 2, hangY + 8 * ratio, massW, massH - 8 * ratio, 4 * ratio);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = "#76b7cb";
-    ctx.strokeStyle = "#1b5568";
-    ctx.fillRect(cartX, trackY - 5 * ratio, 76 * ratio, 34 * ratio);
-    ctx.strokeRect(cartX, trackY - 5 * ratio, 76 * ratio, 34 * ratio);
-
-    if (this.trial.physics.config.scenario === "cart_plus_pad") {
-      ctx.fillStyle = "#be8c36";
-      ctx.fillRect(cartX + 7 * ratio, trackY + 31 * ratio, 62 * ratio, 8 * ratio);
+    // Weight lines
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+    ctx.lineWidth = 1 * ratio;
+    for (let sy = hangY + 16 * ratio; sy < hangY + massH - 4 * ratio; sy += 7 * ratio) {
+      ctx.beginPath();
+      ctx.moveTo(hangX - massW / 2 + 3 * ratio, sy);
+      ctx.lineTo(hangX + massW / 2 - 3 * ratio, sy);
+      ctx.stroke();
     }
 
-    ctx.fillStyle = "#8ab1bf";
-    ctx.fillRect(pulleyX - 16 * ratio, massTopY, 32 * ratio, 36 * ratio);
-    ctx.strokeRect(pulleyX - 16 * ratio, massTopY, 32 * ratio, 36 * ratio);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `700 ${10 * ratio}px 'IBM Plex Sans', sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillText("mₕ", hangX, hangY + 22 * ratio);
+    ctx.font = `600 ${9 * ratio}px 'IBM Plex Sans', sans-serif`;
+    const hangingKg = this.trial.physics.config.hangingMassKg ?? 0.2;
+    ctx.fillText(`${hangingKg.toFixed(1)}kg`, hangX, hangY + 33 * ratio);
+    ctx.textAlign = "left";
 
+    // Landing cushion
+    ctx.fillStyle = "#edf5f8";
+    ctx.strokeStyle = "#a9c5d1";
+    ctx.lineWidth = 1.2 * ratio;
+    ctx.beginPath();
+    ctx.roundRect(hangX - 25 * ratio, floorY - 10 * ratio, 50 * ratio, 10 * ratio, 3 * ratio);
+    ctx.fill();
+    ctx.stroke();
+
+    // Wheels
+    for (const wx of [cartX + 14 * ratio, cartX + cartW - 14 * ratio]) {
+      ctx.fillStyle = "#253b47";
+      ctx.beginPath();
+      ctx.arc(wx, trackSurfaceY - wheelR, wheelR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#0f7e9b";
+      ctx.lineWidth = 1.5 * ratio;
+      ctx.stroke();
+      ctx.fillStyle = "#dce7eb";
+      ctx.beginPath();
+      ctx.arc(wx, trackSurfaceY - wheelR, 2.5 * ratio, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Cart Body (Signature Teal)
+    const cartGrad = ctx.createLinearGradient(cartX, cartBodyY, cartX, cartBodyY + cartBodyH);
+    cartGrad.addColorStop(0, "#1495b5");
+    cartGrad.addColorStop(0.4, "#0f7e9b");
+    cartGrad.addColorStop(1, "#095a6f");
+    ctx.fillStyle = cartGrad;
+    ctx.strokeStyle = "#084959";
+    ctx.lineWidth = 1.8 * ratio;
+    ctx.beginPath();
+    ctx.roundRect(cartX, cartBodyY, cartW, cartBodyH, 4 * ratio);
+    ctx.fill();
+    ctx.stroke();
+
+    // Optional Friction Pad underneath cart
+    if (this.trial.physics.config.scenario === "cart_plus_pad") {
+      ctx.fillStyle = "#a86c2e";
+      ctx.strokeStyle = "#6d4111";
+      ctx.lineWidth = 1.2 * ratio;
+      const padW = 44 * ratio;
+      const padH = 5 * ratio;
+      const padX = cartX + (cartW - padW) / 2;
+      const padY = trackSurfaceY - padH;
+      ctx.fillRect(padX, padY, padW, padH);
+      ctx.strokeRect(padX, padY, padW, padH);
+
+      ctx.fillStyle = "#e59f42";
+      ctx.fillRect(padX + 2 * ratio, padY + 1 * ratio, padW - 4 * ratio, padH - 2 * ratio);
+    }
+
+    // Mass tray & Force Sensor Box
+    ctx.fillStyle = "rgba(18, 49, 64, 0.25)";
+    ctx.beginPath();
+    ctx.roundRect(cartX + 6 * ratio, cartBodyY + 3 * ratio, cartW - 12 * ratio, 12 * ratio, 2 * ratio);
+    ctx.fill();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `700 ${10 * ratio}px 'IBM Plex Sans', sans-serif`;
+    ctx.fillText("Force Sensor", cartX + 8 * ratio, cartBodyY + cartBodyH - 6 * ratio);
+
+    // Live Kinematic Vectors
     const liveForce = interpolate(this.trial.signals.timesS, this.trial.signals.forceN, this.currentTimeS);
     const liveVelocity = interpolate(this.trial.signals.timesS, this.trial.signals.velocityMps, this.currentTimeS);
+    const cartCenter = cartX + cartW / 2;
 
-    ctx.fillStyle = "#203f4a";
-    ctx.font = `${12 * ratio}px 'Trebuchet MS', sans-serif`;
-    ctx.fillText("Track", trackLeft, trackY + 56 * ratio);
-    ctx.fillText("Pulley", pulleyX - 20 * ratio, pulleyY - 24 * ratio);
-    ctx.fillText("Force Sensor", cartX + 4 * ratio, trackY - 16 * ratio);
+    if (Math.abs(liveVelocity) > 0.05) {
+      const vLen = clamp(liveVelocity * 28 * ratio, -70 * ratio, 70 * ratio);
+      drawArrow(ctx, cartCenter, cartBodyY - 14 * ratio, cartCenter + vLen, cartBodyY - 14 * ratio, "#0284c7", 2.5 * ratio);
+      ctx.fillStyle = "#0284c7";
+      ctx.font = `700 ${10 * ratio}px 'IBM Plex Sans', sans-serif`;
+      ctx.fillText(`v = ${liveVelocity.toFixed(2)} m/s`, cartCenter + vLen + 4 * ratio, cartBodyY - 10 * ratio);
+    }
+
+    if (liveForce > 0.05) {
+      const tLen = clamp(liveForce * 18 * ratio, 15 * ratio, 60 * ratio);
+      drawArrow(ctx, hookX, hookY, hookX + tLen, hookY, "#0f7e9b", 2.2 * ratio);
+    }
 
     this.timeValue.textContent = `${this.currentTimeS.toFixed(2)} s`;
     this.forceValue.textContent = `${liveForce.toFixed(3)} N`;
