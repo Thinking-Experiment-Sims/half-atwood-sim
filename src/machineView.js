@@ -130,7 +130,8 @@ export class HalfAtwoodView {
    * phaseValue: HTMLElement,
    * forceValue: HTMLElement,
    * velocityValue: HTMLElement,
-   * scenarioValue: HTMLElement
+   * scenarioValue: HTMLElement,
+   * tableMassValue?: HTMLElement,
    * onTimeUpdate?: (timeS: number, trial: CurrentTrial|null) => void
    * }} options
    */
@@ -144,10 +145,12 @@ export class HalfAtwoodView {
     this.forceValue = options.forceValue;
     this.velocityValue = options.velocityValue;
     this.scenarioValue = options.scenarioValue;
+    this.tableMassValue = options.tableMassValue ?? null;
     this.onTimeUpdate = options.onTimeUpdate ?? (() => {});
 
     this.trial = null;
     this.currentTimeS = 0;
+    this.tableMassKg = 0.5;
     this.playing = false;
     this.lastFrame = null;
 
@@ -176,6 +179,21 @@ export class HalfAtwoodView {
   }
 
   /**
+   * @param {number} massKg
+   */
+  setTableMass(massKg) {
+    this.tableMassKg = massKg;
+    if (this.tableMassValue) {
+      this.tableMassValue.textContent = `${massKg.toFixed(2)} kg`;
+    }
+    if (!this.trial) {
+      this.renderEmpty();
+    } else {
+      this.render();
+    }
+  }
+
+  /**
    * @param {CurrentTrial|null} trial
    */
   setTrial(trial) {
@@ -187,6 +205,13 @@ export class HalfAtwoodView {
       this.renderEmpty();
       this.onTimeUpdate(0, null);
       return;
+    }
+
+    if (trial.physics?.config?.cartMassKg) {
+      this.tableMassKg = trial.physics.config.cartMassKg;
+      if (this.tableMassValue) {
+        this.tableMassValue.textContent = `${this.tableMassKg.toFixed(2)} kg`;
+      }
     }
 
     const maxTime = trial.signals.timesS[trial.signals.timesS.length - 1] ?? 4.5;
@@ -436,9 +461,23 @@ export class HalfAtwoodView {
     ctx.roundRect(cartX + 6 * ratio, cartBodyY + 3 * ratio, cartW - 12 * ratio, 12 * ratio, 2 * ratio);
     ctx.fill();
 
+    if (this.tableMassKg > 0.5) {
+      const addedMassKg = this.tableMassKg - 0.5;
+      const numBars = Math.min(4, Math.max(1, Math.round(addedMassKg / 0.25)));
+      const barW = Math.max(8 * ratio, ((cartW - 22 * ratio) / 4));
+      for (let bi = 0; bi < numBars; bi += 1) {
+        const bx = cartX + 8 * ratio + bi * (barW + 2 * ratio);
+        ctx.fillStyle = "#d67b19";
+        ctx.strokeStyle = "#9e5307";
+        ctx.lineWidth = 1 * ratio;
+        ctx.fillRect(bx, cartBodyY + 4 * ratio, barW, 9 * ratio);
+        ctx.strokeRect(bx, cartBodyY + 4 * ratio, barW, 9 * ratio);
+      }
+    }
+
     ctx.fillStyle = "#ffffff";
     ctx.font = `600 ${9.5 * ratio}px 'IBM Plex Sans', sans-serif`;
-    ctx.fillText("Cart + Sensor", cartX + 8 * ratio, cartBodyY + cartBodyH - 6 * ratio);
+    ctx.fillText(`Cart: ${this.tableMassKg.toFixed(2)} kg`, cartX + 8 * ratio, cartBodyY + cartBodyH - 6 * ratio);
 
     // Tie hook
     const hookX = cartX + cartW;
@@ -791,9 +830,24 @@ export class HalfAtwoodView {
     ctx.roundRect(cartX + 6 * ratio, cartBodyY + 3 * ratio, cartW - 12 * ratio, 12 * ratio, 2 * ratio);
     ctx.fill();
 
+    const currentTableMass = this.trial.physics.config.cartMassKg ?? this.tableMassKg;
+    if (currentTableMass > 0.5) {
+      const addedMassKg = currentTableMass - 0.5;
+      const numBars = Math.min(4, Math.max(1, Math.round(addedMassKg / 0.25)));
+      const barW = Math.max(8 * ratio, ((cartW - 22 * ratio) / 4));
+      for (let bi = 0; bi < numBars; bi += 1) {
+        const bx = cartX + 8 * ratio + bi * (barW + 2 * ratio);
+        ctx.fillStyle = "#d67b19";
+        ctx.strokeStyle = "#9e5307";
+        ctx.lineWidth = 1 * ratio;
+        ctx.fillRect(bx, cartBodyY + 4 * ratio, barW, 9 * ratio);
+        ctx.strokeRect(bx, cartBodyY + 4 * ratio, barW, 9 * ratio);
+      }
+    }
+
     ctx.fillStyle = "#ffffff";
     ctx.font = `700 ${10 * ratio}px 'IBM Plex Sans', sans-serif`;
-    ctx.fillText("Force Sensor", cartX + 8 * ratio, cartBodyY + cartBodyH - 6 * ratio);
+    ctx.fillText(`Cart: ${currentTableMass.toFixed(2)} kg`, cartX + 8 * ratio, cartBodyY + cartBodyH - 6 * ratio);
 
     // Live Kinematic Vectors
     const liveForce = interpolate(this.trial.signals.timesS, this.trial.signals.forceN, this.currentTimeS);
@@ -817,6 +871,9 @@ export class HalfAtwoodView {
     this.forceValue.textContent = `${liveForce.toFixed(3)} N`;
     this.velocityValue.textContent = `${liveVelocity.toFixed(3)} m/s`;
     this.scenarioValue.textContent = this.trial.physics.config.scenarioLabel;
+    if (this.tableMassValue) {
+      this.tableMassValue.textContent = `${currentTableMass.toFixed(2)} kg`;
+    }
     this.phaseValue.textContent = this.currentPhaseLabel(this.currentTimeS);
   }
 

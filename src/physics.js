@@ -25,6 +25,7 @@ export const TRACK_LENGTH_M = 1.2;
  * @property {ScenarioId} scenario
  * @property {string} presetId
  * @property {number} hangingMassKg
+ * @property {number} [tableMassKg]
  */
 
 /**
@@ -51,16 +52,20 @@ export function getScenarioConfig(input) {
     throw new Error(`Unsupported scenario: ${input.scenario}`);
   }
 
-  const systemMassKg = input.scenario === "cart_plus_pad"
-    ? preset.cartMassKg + preset.padMassKg
+  const tableMassKg = typeof input.tableMassKg === "number" && input.tableMassKg > 0
+    ? input.tableMassKg
     : preset.cartMassKg;
+
+  const systemMassKg = input.scenario === "cart_plus_pad"
+    ? tableMassKg + preset.padMassKg
+    : tableMassKg;
 
   return {
     scenario: input.scenario,
     scenarioLabel: scenarioTitle(input.scenario),
     presetId: preset.id,
     presetLabel: preset.label,
-    cartMassKg: preset.cartMassKg,
+    cartMassKg: tableMassKg,
     padMassKg: preset.padMassKg,
     systemMassKg,
     dragN: scenarioFriction.dragN,

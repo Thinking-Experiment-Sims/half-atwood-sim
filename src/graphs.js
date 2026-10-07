@@ -1,9 +1,38 @@
+import { linearRegression, mean, sliceWindow } from "./regression.js";
+
 const MARGIN = {
   left: 74,
   right: 20,
   top: 30,
   bottom: 38
 };
+
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} x
+ * @param {number} y
+ * @param {number} width
+ * @param {number} height
+ * @param {number} radius
+ */
+function drawRoundedRect(ctx, x, y, width, height, radius) {
+  if (typeof ctx.roundRect === "function") {
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, radius);
+    return;
+  }
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.arcTo(x + width, y, x + width, y + radius, radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.arcTo(x + width, y + height, x + width - radius, y + height, radius);
+  ctx.lineTo(x + radius, y + height);
+  ctx.arcTo(x, y + height, x, y + height - radius, radius);
+  ctx.lineTo(x, y + radius);
+  ctx.arcTo(x, y, x + radius, y, radius);
+  ctx.closePath();
+}
 
 /**
  * @param {number} value
@@ -83,6 +112,9 @@ function normalizeSelection(selection) {
  * @property {HTMLCanvasElement} canvas
  * @property {string} title
  * @property {string} yLabel
+ * @property {"mean" | "slope"} [statsType]
+ * @property {string} [statsLabel]
+ * @property {string} [statsUnit]
  * @property {(selection: {startS: number, endS: number}|null) => void} onSelectionChange
  */
 
@@ -95,6 +127,9 @@ export class TimeSeriesGraph {
     this.ctx = this.canvas.getContext("2d");
     this.title = options.title;
     this.yLabel = options.yLabel;
+    this.statsType = options.statsType || null;
+    this.statsLabel = options.statsLabel || "";
+    this.statsUnit = options.statsUnit || "";
     this.onSelectionChange = options.onSelectionChange;
 
     this.times = [];
@@ -232,6 +267,7 @@ export class TimeSeriesGraph {
 
     if (this.selection) {
       this.drawSelection();
+      this.drawStatsOverlay();
     }
   }
 
@@ -382,9 +418,146 @@ export class TimeSeriesGraph {
     this.drawHandle(x2);
 
     ctx.fillStyle = "#854400";
-    ctx.font = `${10 * ratio}px 'Trebuchet MS', 'Segoe UI', sans-serif`;
+    ctx.font = `${10 * ratio}px 'Inter', 'IBM Plex Sans', -apple-system, sans-serif`;
     ctx.fillText(`${selection.startS.toFixed(2)}s`, x1 + 3 * ratio, this.bounds.plotBottom - 8 * ratio);
     ctx.fillText(`${selection.endS.toFixed(2)}s`, x2 - 34 * ratio, this.bounds.plotBottom - 8 * ratio);
+    ctx.restore();
+  }
+
+  drawStatsOverlay() {
+    if (!this.statsType || !this.selection || !this.times.length) {
+      return;
+    }
+
+    const selection = normalizeSelection(this.selection);
+    if (!selection) {
+      return;
+    }
+
+    const ctx = this.ctx;
+    const ratio = window.devicePixelRatio || 1;
+    const x1 = this.xToPx(selection.startS);
+    const x2 = this.xToPx(selection.endS);
+    const duration = selection.endS - selection.startS;
+
+    const selected = sliceWindow(this.times, this.values, selection.startS, selection.endS);
+    const MIN_POINTS = 6;
+    const hasEnoughData = selected.values.length >= MIN_POINTS;
+
+    let metricText = "";
+    let titleText = this.statsLabel || (this.statsType === "mean" ? "Tension (Fₜ)" : "Acceleration");
+
+    if (this.statsType === "mean") {
+      if (hasEnoughData) {
+        const meanVal = mean(selected.values);
+        metricText = `Mean: ${meanVal.toFixed(3)} N`;
+
+        const meanYPx = this.yToPx(meanVal);
+        if (meanYPx >= this.bounds.plotTop && meanYPx <= this.bounds.plotBottom) {
+          ctx.save();
+          ctx.setLineDash([5 * ratio, 4 * ratio]);
+          ctx.strokeStyle = "#be6a11";
+          ctx.lineWidth = 2 * ratio;
+          ctx.beginPath();
+          ctx.moveTo(x1, meanYPx);
+          ctx.lineTo(x2, meanYPx);
+          ctx.stroke();
+          ctx.restore();
+        }
+      } else {
+        metricText = "Selecting window...";
+      }
+    } else if (this.statsType === "slope") {
+      if (hasEnoughData) {
+        const fit = linearRegression(selected.times, selected.values);
+        if (fit) {
+          metricText = `Acceleration: ${fit.slope.toFixed(3)} m/s²`;
+
+          const y1Val = fit.slope * selection.startS + fit.intercept;
+          const y2Val = fit.slope * selection.endS + fit.intercept;
+          const py1 = this.yToPx(y1Val);
+          const py2 = this.yToPx(y2Val);
+
+          ctx.save();
+          ctx.strokeStyle = "#be6a11";
+          ctx.lineWidth = 2.5 * ratio;
+          ctx.beginPath();
+          ctx.moveTo(x1, py1);
+          ctx.lineTo(x2, py2);
+          ctx.stroke();
+          ctx.restore();
+        } else {
+          metricText = "Selecting window...";
+        }
+      } else {
+        metricText = "Selecting window...";
+      }
+    }
+
+    const intervalText = `Window: ${selection.startS.toFixed(2)} s – ${selection.endS.toFixed(2)} s (Δt ${duration.toFixed(2)} s)`;
+
+    ctx.save();
+    ctx.font = `bold ${14 * ratio}px 'Inter', 'IBM Plex Sans', -apple-system, sans-serif`;
+    const metricW = ctx.measureText(metricText).width;
+    ctx.font = `${10 * ratio}px 'Inter', 'IBM Plex Sans', -apple-system, sans-serif`;
+    const subW = ctx.measureText(intervalText).width;
+    ctx.font = `bold ${9.5 * ratio}px 'Inter', 'IBM Plex Sans', -apple-system, sans-serif`;
+    const titleW = ctx.measureText(titleText.toUpperCase()).width;
+
+    const contentWidth = Math.max(metricW, subW, titleW);
+    const boxWidth = Math.max(220 * ratio, contentWidth + 28 * ratio);
+    const boxHeight = 66 * ratio;
+
+    let boxX = this.bounds.plotRight - boxWidth - 12 * ratio;
+    const boxY = this.bounds.plotTop + 10 * ratio;
+
+    const overlapsRight = x2 > (this.bounds.plotRight - boxWidth - 28 * ratio) && x1 < (this.bounds.plotRight - 8 * ratio);
+    if (overlapsRight) {
+      boxX = this.bounds.plotLeft + 12 * ratio;
+    }
+
+    // Soft drop shadow
+    ctx.shadowColor = "rgba(15, 126, 155, 0.16)";
+    ctx.shadowBlur = 10 * ratio;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 2 * ratio;
+
+    // Card background
+    ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
+    drawRoundedRect(ctx, boxX, boxY, boxWidth, boxHeight, 8 * ratio);
+    ctx.fill();
+
+    // Reset shadow
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    // Card border
+    ctx.strokeStyle = "#c8dbe3";
+    ctx.lineWidth = 1.2 * ratio;
+    drawRoundedRect(ctx, boxX, boxY, boxWidth, boxHeight, 8 * ratio);
+    ctx.stroke();
+
+    // The Thinking Experiment Amber accent bar
+    ctx.fillStyle = "#d67b19";
+    drawRoundedRect(ctx, boxX + 2.5 * ratio, boxY + 7 * ratio, 3.5 * ratio, boxHeight - 14 * ratio, 2 * ratio);
+    ctx.fill();
+
+    // Header label (Teal)
+    ctx.fillStyle = "#0f7e9b";
+    ctx.font = `700 ${9.5 * ratio}px 'Inter', 'IBM Plex Sans', -apple-system, sans-serif`;
+    ctx.fillText(titleText.toUpperCase(), boxX + 14 * ratio, boxY + 18 * ratio);
+
+    // Primary Metric (High-contrast Ink)
+    ctx.fillStyle = "#123140";
+    ctx.font = `700 ${14 * ratio}px 'Inter', 'IBM Plex Sans', -apple-system, sans-serif`;
+    ctx.fillText(metricText, boxX + 14 * ratio, boxY + 38 * ratio);
+
+    // Subtitle / Window details (Muted)
+    ctx.fillStyle = "#4b6570";
+    ctx.font = `${10 * ratio}px 'Inter', 'IBM Plex Sans', -apple-system, sans-serif`;
+    ctx.fillText(intervalText, boxX + 14 * ratio, boxY + 54 * ratio);
+
     ctx.restore();
   }
 

@@ -113,6 +113,9 @@ const forceGraph = new TimeSeriesGraph({
   canvas: /** @type {HTMLCanvasElement} */ (document.querySelector("#forceCanvas")),
   title: "Tension (Fₜ) vs Time",
   yLabel: "Fₜ (N)",
+  statsType: "mean",
+  statsLabel: "Tension (Fₜ)",
+  statsUnit: "N",
   onSelectionChange(selection) {
     store.update((state) => ({
       ...state,
@@ -129,6 +132,9 @@ const velocityGraph = new TimeSeriesGraph({
   canvas: /** @type {HTMLCanvasElement} */ (document.querySelector("#velocityCanvas")),
   title: "Velocity vs Time",
   yLabel: "Velocity (m/s)",
+  statsType: "slope",
+  statsLabel: "Acceleration",
+  statsUnit: "m/s²",
   onSelectionChange(selection) {
     store.update((state) => ({
       ...state,

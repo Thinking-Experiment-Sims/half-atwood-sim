@@ -19,6 +19,8 @@
  */
 
 export const HANGING_MASS_STEPS_KG = Object.freeze([0.1, 0.2, 0.3, 0.4, 0.5, 0.6]);
+export const TABLE_MASS_STEPS_KG = Object.freeze([0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]);
+export const DEFAULT_TABLE_MASS_KG = 0.5;
 
 /** @type {TeacherPreset[]} */
 export const PRESETS = Object.freeze([

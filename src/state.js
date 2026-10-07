@@ -16,6 +16,7 @@
  * @property {string} scenario
  * @property {string} preset
  * @property {number} trial_id
+ * @property {number} table_mass_kg
  * @property {number} hanging_mass_kg
  * @property {number} force_mean_N
  * @property {number} accel_mps2
@@ -39,6 +40,7 @@
  * @typedef {Object} AppState
  * @property {"cart_only" | "cart_plus_pad"} scenario
  * @property {string} presetId
+ * @property {number} tableMassKg
  * @property {number} hangingMassKg
  * @property {boolean} noiseEnabled
  * @property {boolean} showFbd
@@ -67,6 +69,7 @@ function createInitialState() {
   return {
     scenario: "cart_only",
     presetId: "low",
+    tableMassKg: 0.5,
     hangingMassKg: 0.1,
     noiseEnabled: false,
     showFbd: true,
