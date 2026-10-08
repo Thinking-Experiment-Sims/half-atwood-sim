@@ -184,20 +184,29 @@ label {
   color: var(--muted);
 }
 
-select {
+select,
+input[type="number"] {
   border: 1px solid var(--field-border);
   border-radius: 8px;
   padding: 0.48rem 0.65rem;
   color: var(--ink);
   background: var(--field-bg);
   font-weight: 500;
-  cursor: pointer;
   outline: none;
 }
 
-select:focus {
+select {
+  cursor: pointer;
+}
+
+select:focus,
+input[type="number"]:focus {
   border-color: var(--teal);
   box-shadow: 0 0 0 3px rgba(15, 126, 155, 0.15);
+}
+
+.custom-mass-input {
+  margin-top: 0.35rem;
 }
 
 .toggle-row {

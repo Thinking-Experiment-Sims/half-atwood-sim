@@ -2,7 +2,7 @@ import { ScatterFitGraph, TimeSeriesGraph } from "./graphs.js";
 import { HalfAtwoodView } from "./machineView.js";
 import { exportGraphsSnapshot, exportTrialDataCsv } from "./export.js";
 import { computeTrialPhysics, getScenarioConfig } from "./physics.js";
-import { PRESETS, HANGING_MASS_STEPS_KG, getPresetById, scenarioTitle } from "./presets.js";
+import { PRESETS, HANGING_MASS_STEPS_KG, TABLE_MASS_STEPS_KG, DEFAULT_TABLE_MASS_KG, getPresetById, scenarioTitle } from "./presets.js";
 import { linearRegression, linearRegressionInWindow, mean, sliceWindow } from "./regression.js";
 import { generateTrialSignals } from "./signals.js";
 import { createStore } from "./state.js";
@@ -69,6 +69,8 @@ const store = createStore();
 const elements = {
   scenarioSelect: document.querySelector("#scenarioSelect"),
   presetSelect: document.querySelector("#presetSelect"),
+  tableMassSelect: document.querySelector("#tableMassSelect"),
+  customTableMassInput: document.querySelector("#customTableMassInput"),
   hangingMassSelect: document.querySelector("#hangingMassSelect"),
   noiseCheckbox: document.querySelector("#noiseCheckbox"),
   showFbdCheckbox: document.querySelector("#showFbdCheckbox"),
@@ -106,7 +108,8 @@ const elements = {
   machinePhaseValue: document.querySelector("#machinePhaseValue"),
   machineForceValue: document.querySelector("#machineForceValue"),
   machineVelocityValue: document.querySelector("#machineVelocityValue"),
-  machineScenarioValue: document.querySelector("#machineScenarioValue")
+  machineScenarioValue: document.querySelector("#machineScenarioValue"),
+  machineTableMassValue: document.querySelector("#machineTableMassValue")
 };
 
 const forceGraph = new TimeSeriesGraph({
@@ -161,6 +164,7 @@ const machineView = new HalfAtwoodView({
   forceValue: elements.machineForceValue,
   velocityValue: elements.machineVelocityValue,
   scenarioValue: elements.machineScenarioValue,
+  tableMassValue: elements.machineTableMassValue,
   onTimeUpdate(timeS, trial) {
     renderTrialProgress(timeS, trial);
   }
@@ -169,6 +173,20 @@ const machineView = new HalfAtwoodView({
 function hydrateSelectors() {
   hydratePresetSelect("cart_only", "low");
 
+  elements.tableMassSelect.innerHTML = "";
+  for (const mass of TABLE_MASS_STEPS_KG) {
+    const option = document.createElement("option");
+    option.value = String(mass);
+    option.textContent = mass === 0.5 ? `${mass.toFixed(2)} kg (Standard Cart)` : `${mass.toFixed(2)} kg`;
+    elements.tableMassSelect.append(option);
+  }
+  const customOption = document.createElement("option");
+  customOption.value = "custom";
+  customOption.textContent = "Custom...";
+  elements.tableMassSelect.append(customOption);
+  elements.tableMassSelect.value = "0.5";
+
+  elements.hangingMassSelect.innerHTML = "";
   for (const mass of HANGING_MASS_STEPS_KG) {
     const option = document.createElement("option");
     option.value = String(mass);
@@ -284,6 +302,32 @@ function bindEvents() {
     renderFbd();
   });
 
+  elements.tableMassSelect.addEventListener("change", () => {
+    const val = elements.tableMassSelect.value;
+    if (val === "custom") {
+      elements.customTableMassInput.hidden = false;
+      const customVal = Number(elements.customTableMassInput.value) || 0.5;
+      store.setState({ tableMassKg: customVal });
+      machineView.setTableMass(customVal);
+    } else {
+      elements.customTableMassInput.hidden = true;
+      const massVal = Number(val);
+      elements.customTableMassInput.value = String(massVal);
+      store.setState({ tableMassKg: massVal });
+      machineView.setTableMass(massVal);
+    }
+    renderPresetDetails();
+    renderFbd();
+  });
+
+  elements.customTableMassInput.addEventListener("input", () => {
+    const customVal = Math.max(0.01, Number(elements.customTableMassInput.value) || 0.5);
+    store.setState({ tableMassKg: customVal });
+    machineView.setTableMass(customVal);
+    renderPresetDetails();
+    renderFbd();
+  });
+
   elements.hangingMassSelect.addEventListener("change", () => {
     store.setState({
       hangingMassKg: Number(elements.hangingMassSelect.value)
@@ -324,6 +368,7 @@ function bindEvents() {
       scenario: state.scenario,
       preset: preset.label,
       trial_id: state.currentTrial.id,
+      table_mass_kg: roundTo(state.currentTrial.physics.config.cartMassKg, 3),
       hanging_mass_kg: roundTo(state.currentTrial.physics.hangingMassKg, 3),
       force_mean_N: roundTo(state.measurement.forceMeanN, 4),
       accel_mps2: roundTo(state.measurement.accelerationMps2, 4),
@@ -421,12 +466,14 @@ function runTrial() {
   const physics = computeTrialPhysics({
     scenario: state.scenario,
     presetId: state.presetId,
-    hangingMassKg: state.hangingMassKg
+    hangingMassKg: state.hangingMassKg,
+    tableMassKg: state.tableMassKg
   });
 
   const seed = Math.floor(
     state.nextTrialId * 997
       + state.hangingMassKg * 10000
+      + state.tableMassKg * 1000
       + (state.scenario === "cart_plus_pad" ? 7000 : 2000)
       + state.presetId.charCodeAt(0)
   );
@@ -550,13 +597,14 @@ function renderPresetDetails() {
   const config = getScenarioConfig({
     scenario: state.scenario,
     presetId: state.presetId,
-    hangingMassKg: state.hangingMassKg
+    hangingMassKg: state.hangingMassKg,
+    tableMassKg: state.tableMassKg
   });
 
   elements.presetDetails.innerHTML = [
     `<li><strong>Scenario:</strong> ${config.scenarioLabel}</li>`,
     `<li><strong>Preset:</strong> ${config.presetLabel}</li>`,
-    `<li><strong>Cart mass:</strong> ${config.cartMassKg.toFixed(2)} kg</li>`,
+    `<li><strong>Table mass (cart):</strong> ${config.cartMassKg.toFixed(2)} kg</li>`,
     `<li><strong>Pad mass:</strong> ${config.padMassKg.toFixed(2)} kg</li>`,
     `<li><strong>System mass:</strong> ${config.systemMassKg.toFixed(2)} kg</li>`,
     `<li><strong>Moving drag:</strong> ${config.dragN.toFixed(2)} N</li>`,
@@ -576,6 +624,7 @@ function renderCurrentTrialSummary() {
 
   elements.currentTrialSummary.innerHTML = [
     `<li><strong>Trial ID:</strong> ${state.currentTrial.id}</li>`,
+    `<li><strong>Table mass:</strong> ${physics.config.cartMassKg.toFixed(2)} kg</li>`,
     `<li><strong>Hanging mass:</strong> ${physics.hangingMassKg.toFixed(2)} kg</li>`,
     `<li><strong>Pulling force:</strong> ${physics.pullingForceN.toFixed(2)} N</li>`,
     `<li><strong>Moved:</strong> ${physics.moved ? "Yes" : "No"}</li>`,
@@ -600,6 +649,7 @@ function renderTable() {
       "<tr>",
       `<td>${record.trial_id}</td>`,
       `<td>${scenario}</td>`,
+      `<td>${(record.table_mass_kg ?? 0.5).toFixed(2)}</td>`,
       `<td>${record.hanging_mass_kg.toFixed(2)}</td>`,
       `<td>${record.force_mean_N.toFixed(3)}</td>`,
       `<td>${record.accel_mps2.toFixed(3)}</td>`,
@@ -663,7 +713,7 @@ function renderChecklist() {
   const state = store.getState();
 
   const relevantRecords = state.trialRecords.filter((record) => record.scenario === state.scenario);
-  const setupDone = Boolean(state.presetId && state.hangingMassKg);
+  const setupDone = Boolean(state.presetId && state.hangingMassKg && state.tableMassKg);
   const runDone = Boolean(state.currentTrial);
   const forceDone = state.measurement.forceMeanN !== null;
   const velocityDone = state.measurement.accelerationMps2 !== null;
@@ -720,7 +770,8 @@ function renderFbd() {
     : getScenarioConfig({
       scenario: state.scenario,
       presetId: state.presetId,
-      hangingMassKg: state.hangingMassKg
+      hangingMassKg: state.hangingMassKg,
+      tableMassKg: state.tableMassKg
     });
 
   const tension = state.currentTrial?.physics.tensionN ?? state.hangingMassKg * 9.81;
@@ -792,9 +843,25 @@ function syncControlsFromState() {
   elements.presetSelect.disabled = state.scenario === "cart_only";
   elements.scenarioSelect.value = state.scenario;
   elements.presetSelect.value = state.presetId;
+
+  const isPredefinedTableMass = TABLE_MASS_STEPS_KG.includes(state.tableMassKg);
+  if (isPredefinedTableMass) {
+    elements.tableMassSelect.value = String(state.tableMassKg);
+    elements.customTableMassInput.hidden = true;
+    elements.customTableMassInput.value = String(state.tableMassKg);
+  } else {
+    elements.tableMassSelect.value = "custom";
+    elements.customTableMassInput.hidden = false;
+    elements.customTableMassInput.value = String(state.tableMassKg);
+  }
+
   elements.hangingMassSelect.value = String(state.hangingMassKg);
   elements.noiseCheckbox.checked = state.noiseEnabled;
   elements.showFbdCheckbox.checked = state.showFbd;
+
+  if (elements.machineTableMassValue) {
+    elements.machineTableMassValue.textContent = `${state.tableMassKg.toFixed(2)} kg`;
+  }
 }
 
 function renderAll() {
@@ -815,6 +882,8 @@ function init() {
 
   const defaultPreset = getPresetById(store.getState().presetId);
   store.setState({ noiseEnabled: defaultPreset.noiseDefault });
+
+  machineView.setTableMass(store.getState().tableMassKg);
 
   forceGraph.setData({
     timesS: [],
